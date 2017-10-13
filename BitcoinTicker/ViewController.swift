@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Alamofire
 
 class ViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     
@@ -41,65 +42,83 @@ class ViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDele
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         finalURL = baseURL + currencyArray[row]
-        print(finalURL)
+        getBitcoinData(url: finalURL)
     }
     
     
-    //Use Codable
-    
-    struct BitcoinData: Codable {
-        let averages: [String: Averages]
-        struct Averages : Codable {
-            let day: String
-        }
-    }
-    
-    
-    
-    HTTP.GET("http://localhost:8080/bar") { response in
-    if let error = response.error {
-    print("got an error: \(error)")
-    return
-    }
-    do {
-    let decoder = JSONDecoder()
-    let resp = try decoder.decode(Response.self, from: response.data)
-    print("completed: \(resp.status)")
-    } catch let error {
-    print("decode json error: \(error)")
-    }
-    }
+
     
 //    
 //    //MARK: - Networking
 //    /***************************************************************/
-//    
-//    func getWeatherData(url: String, parameters: [String : String]) {
-//        
-//        Alamofire.request(url, method: .get, parameters: parameters)
-//            .responseJSON { response in
+    
+    //Use Codable
+    
+    struct BitcoinData: Codable {
+        let last: Double
+    }
+    
+    func getBitcoinData(url: String) {
+        
+        Alamofire.request(url).responseData { response in
+            guard response.result.isSuccess else {
+                return
+            }
+            print(response.result.value!)
+            do {
+                if let data = response.data {
+                    let decoder = JSONDecoder()
+                    let resp = try decoder.decode(BitcoinData.self, from: data)
+                    //print("got \(resp.last)")
+                    self.updateBitcoinData(resp.last)
+                }
+            }
+            catch {
+                print("Error: \(error)")
+                self.bitcoinPriceLabel.text = "Connection Issues"
+            }
+        }
+        
+    }
+        
+    func updateBitcoinData(_ data: Double) {
+        print(String(describing: data))
+        bitcoinPriceLabel.text = String(describing: data)
+    }
+        
+//        string encoding chaining
+//        if let data = response.data, let utf8Text = String(data: data, encoding: .utf8)
+        
+//        let jsonData = jsonString.data(encoding: .utf8)!
+//        let decoder = JSONDecoder()
+//        let beer = try! decoder.decode(Beer.self, for: jsonData)
+//
+        
+//        Alamofire.request(url).responseJSON { response in
 //                if response.result.isSuccess {
 //
-//                    print("Sucess! Got the weather data")
-//                    let weatherJSON : JSON = JSON(response.result.value!)
+//                    print("Sucess! Got the Bitcoin data")
+//                    let decoder = JSONDecoder()
+//                    let resp = try decoder.decode(BitcoinData.self, from: response.result.value)
 //
-//                    self.updateWeatherData(json: weatherJSON)
+//                    self.updateBitcoinData(resp)
 //
 //                } else {
-//                    print("Error: \(String(describing: response.result.error))")
+//                    print("Error: \(response.error)")
 //                    self.bitcoinPriceLabel.text = "Connection Issues"
 //                }
 //            }
-//
-//    }
-//
-//    
-//    
-//    
-//    
+
+
+    
+    
+    
+    
 //    //MARK: - JSON Parsing
 //    /***************************************************************/
-//    
+
+
+    
 //    func updateWeatherData(json : JSON) {
 //        
 //        if let tempResult = json["main"]["temp"].double {
@@ -112,10 +131,9 @@ class ViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDele
 //        
 //        updateUIWithWeatherData()
 //    }
-//    
+//
 
-
-
-
+    
+    
 }
 
